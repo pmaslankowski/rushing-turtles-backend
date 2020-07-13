@@ -9,6 +9,11 @@ class Player(object):
   turtle: Turtle
   cards: List[Card]
 
+  def __init__(self, person : Person, turtle : Turtle, cards : List[Card]):
+    self.person = person
+    self.turtle = turtle
+    self.cards = cards
+
   def has_card(self, card : Card):
     return card in self.cards
 
