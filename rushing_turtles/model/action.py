@@ -1,14 +1,13 @@
 from rushing_turtles.model.card import Card
 
 class Action(object):
-#  card: Card
-  # todo: wsparcie dla tęczowych kart
+  card: Card
   
-  def get_turtle(self):
-    pass
+  def __init__(self, card : Card):
+    self.card = card
 
-  def get_card(self):
-    pass
+  def get_offset(self):
+    return self.card.offset
 
-  def get_move(self):
-    pass
+  def get_color(self):
+    return self.card.color
