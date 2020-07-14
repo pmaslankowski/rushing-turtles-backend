@@ -32,4 +32,4 @@ class Card(object):
     return hash(self.id)
 
   def __repr__(self):
-    return f'Card(color={self.color}, symbol={self.symbol})'
+    return f'Card(id={self.id}, color={self.color}, symbol={self.symbol})'
