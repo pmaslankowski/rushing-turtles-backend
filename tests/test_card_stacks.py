@@ -3,7 +3,7 @@ import random
 
 from rushing_turtles.model.card_stacks import CardStacks
 from rushing_turtles.model.card import Card
-  
+
 def test_get_new_should_return_first_card():
   card = Card(0, 'RED', 'PLUS')
   stacks = CardStacks([card])
@@ -12,6 +12,12 @@ def test_get_new_should_return_first_card():
 
   assert actual == card
 
+def test_get_recent_should_raise_when_stack_is_empty():
+  stacks = CardStacks([])
+
+  with pytest.raises(ValueError):
+    stacks.get_recent()
+    
 def test_get_recent_should_return_recent_card():
   card = Card(0, 'RED', 'PLUS')
   stacks = CardStacks([card])
@@ -19,7 +25,7 @@ def test_get_recent_should_return_recent_card():
   stacks.put(stacks.get_new())
   actual = stacks.get_recent()
 
-  assert actual == card
+  assert actual == card  
 
 def test_get_new_should_raise_exception_when_no_more_cards_available():
   card = Card(0, 'RED', 'PLUS')
