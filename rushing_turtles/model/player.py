@@ -18,4 +18,13 @@ class Player(object):
     return card in self.cards
 
   def has_only_backward_cards(self):
-    return all([card.is_backward() for card in self.cards])  
+    return all([card.is_backward() for card in self.cards])
+
+  # TODO: testy do obu metod
+  def add_card(self, card : Card):
+    self.cards.insert(0, card)
+
+  def remove_card(self, card : Card):
+    if card not in self.cards:
+      raise ValueError("Player {person} doesn't have given card ({card})")
+    self.cards.remove(card)
