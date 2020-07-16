@@ -1,15 +1,18 @@
 from typing import List, Dict
 
 from rushing_turtles.model.turtle import Turtle
+from rushing_turtles.model.card import Card
 
 NUMBER_OF_FIELDS = 10
 
 class Board(object):
   start_field: List[List[Turtle]]
   further_fields: List[List[Turtle]]
+  turtles : List[Turtle]
 
   def __init__(self, turtles):
     assert NUMBER_OF_FIELDS >= 2
+    self.turtles = turtles
     self.start_field = [[turtle] for turtle in turtles]
     self.further_fields = [[] for _ in range(NUMBER_OF_FIELDS-1)]
 
@@ -92,3 +95,26 @@ class Board(object):
     top_part = stack[:split_idx+1]
     bottom_part = stack[split_idx+1:]
     return top_part, bottom_part
+  
+  def is_move_with_card_possible(self, card : Card):
+    if not self.turtles:
+      return False
+    
+    if card.is_rainbow():
+      return self._is_move_with_rainbow_card_possible(card)
+    else:
+      return self._is_move_with_regular_card_possible(card)
+
+  def _is_move_with_rainbow_card_possible(self, card : Card):
+    return card.offset > 0 or self._can_move_any_turtle_backward()
+
+  def _can_move_any_turtle_backward(self):
+    return max([self._find_pos(turtle) for turtle in self.turtles]) > 0
+  
+  def _is_move_with_regular_card_possible(self, card : Card):
+    turtle = Turtle(card.color)
+    if turtle not in self.turtles:
+      return False
+    if card.offset < 0 and self._find_pos(turtle) == 0:
+      return False
+    return True

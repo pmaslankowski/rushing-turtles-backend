@@ -1,7 +1,7 @@
 import pytest
 from rushing_turtles.model.board import Board
 from rushing_turtles.model.turtle import Turtle
-
+from rushing_turtles.model.card import Card
 
 def test_move_should_raise_exception_when_turtle_is_not_on_board():
   turtle = Turtle('RED')
@@ -367,4 +367,102 @@ def test_get_top_last_turtle_should_return_top_last_turtle():
 
   actual = board.get_top_last_turtle()
 
-  assert actual == turtle2  
+  assert actual == turtle2
+
+def test_is_move_possible_should_return_false_when_there_are_no_turtles():
+  board = Board([])
+  card = Card(0, 'RED', 'PLUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_false_when_there_is_no_turtle_with_given_color():
+  board = Board([Turtle('RED')])
+  card = Card(0, 'GREEN', 'PLUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_true_when_card_is_forward():
+  card = Card(0, 'RED', 'PLUS')
+  board = Board([Turtle('RED')])
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert actual
+
+def test_is_move_possible_should_return_true_when_card_is_backward_and_turtle_is_on_start():
+  card = Card(0, 'RED', 'MINUS')
+  board = Board([Turtle('RED')])
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_true_when_card_is_backward_but_turlte_is_not_on_start():
+  card = Card(0, 'RED', 'MINUS')
+  turtle = Turtle('RED')
+  board = Board([turtle])  
+
+  board.move(turtle, 1)
+  actual = board.is_move_with_card_possible(card)
+
+  assert actual
+
+def test_is_move_possible_should_return_false_when_card_is_backward_and_turtle_is_back_on_start():
+  card = Card(0, 'RED', 'MINUS')
+  turtle1 = Turtle('RED')
+  turtle2 = Turtle('BLUE')
+  board = Board([turtle1, turtle2])  
+
+  board.move(turtle2, 1)
+  board.move(turtle1, 1)
+  board.move(turtle2, -1)
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_false_when_there_are_no_turtles_even_if_card_is_rainbow():
+  board = Board([])
+  card = Card(0, 'RAINBOW', 'PLUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_true_when_there_is_one_turtle_and_card_is_forward():
+  board = Board([Turtle('RED')])
+  card = Card(0, 'RAINBOW', 'PLUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert actual
+
+def test_is_move_possible_should_return_false_when_card_is_rainbow_backward_and_turtle_is_on_start():
+  board = Board([Turtle('RED')])
+  card = Card(0, 'RAINBOW', 'MINUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual
+
+def test_is_move_possible_should_return_true_when_card_is_rainbow_backward_and_turtle_is_not_on_start():
+  turtle = Turtle('GREEN')
+  board = Board([turtle])
+  card = Card(0, 'RAINBOW', 'MINUS')
+
+  board.move(turtle, 2)
+  actual = board.is_move_with_card_possible(card)
+
+  assert actual
+
+def test_is_move_possible_should_return_false_when_card_is_rainbow_but_there_are_no_turtles():
+  board = Board([])
+  card = Card(0, 'RAINBOW', 'MINUS')
+
+  actual = board.is_move_with_card_possible(card)
+
+  assert not actual        
