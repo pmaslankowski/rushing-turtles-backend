@@ -34,7 +34,7 @@ class Board(object):
   def move(self, turtle: Turtle, offset: int) -> None:
     pos = self._find_pos(turtle)
     if pos + offset >= NUMBER_OF_FIELDS:
-      raise ValueError("Turtle {turtle} tries to go out of the board")
+      raise ValueError(f"Turtle {turtle} tries to go out of the board")
   
     if pos == 0:
       self._move_from_start(turtle, offset)

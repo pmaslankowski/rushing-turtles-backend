@@ -25,3 +25,6 @@ class Player(object):
     if card not in self.cards:
       raise ValueError("Player {person} doesn't have given card ({card})")
     self.cards.remove(card)
+  
+  def __repr__(self):
+    return f'Player({self.person}, {self.turtle})'
