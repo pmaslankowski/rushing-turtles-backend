@@ -22,10 +22,6 @@ def test_game_with_one_player_shoud_fail():
   with pytest.raises(ValueError):
     Game([Person(0, 'Piotr')], [], [])
 
-def test_game_with_turtles_num_not_equal_to_players_num_should_fail():
-  with pytest.raises(ValueError):
-    Game([Person(0, 'Piotr'), Person(1, 'Marta')], [], [])
-
 def test_game_without_cards_should_fail():
   with pytest.raises(ValueError):
     Game(

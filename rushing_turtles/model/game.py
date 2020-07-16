@@ -12,6 +12,7 @@ from rushing_turtles.model.turtle import Turtle
 
 HAND_SIZE = 5
 
+# TODO: handle the case when autonomous turtle wins. Currently this situation leads to exception 
 class Game(object):
   stacks: CardStacks
   turtles : List[Turtle]
@@ -22,8 +23,6 @@ class Game(object):
   def __init__(self, people : List[Person], turtles : List[Turtle], cards : List[Card]):
     if len(people) < 2:
       raise ValueError('There are at least 2 players required to start the game')
-    if len(turtles) < len(people):
-      raise ValueError('Numbers of players and turtles should be equal')
     if len(cards) < HAND_SIZE * len(people):
       raise ValueError(f'Not enough cards for {len(people)} players')
 
