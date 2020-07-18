@@ -1,12 +1,4 @@
-class Card:
-    def __init__(self, id : int, color : str, action : str):
-        self.id = id
-        self.color = color
-        self.action = action
-
-    def __str__(self):
-        return f"{str(self.id).zfill(2)}. CARD - color: {self.color}, action: {self.action}"
-
+from rushing_turtles.model.card import Card
 
 def generate_cards_for_given_color(first_card_id, color, actions, action_repetition):
     list_of_cards = []
