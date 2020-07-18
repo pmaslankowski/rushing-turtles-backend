@@ -2,7 +2,9 @@ from collections import namedtuple
 
 import json
 
-HelloServerMsg = namedtuple('HelloServerMsg', 'player_id,player_name')
+HelloServerMsg = namedtuple('HelloServerMsg', 'player_id, player_name')
+WantToJoinMsg = namedtuple('WantToJoinTheGame', 'status, player_id')
+StartGameMsg = namedtuple('StartGame', 'player_id')
 
 TYPE_KEY = 'message'
 
@@ -10,7 +12,9 @@ class MessageDeserializer(object):
 
   def __init__(self):
     self.message_types = {
-      'hello server': HelloServerMsg
+      'hello server': HelloServerMsg,
+      'want to join the game': WantToJoinMsg,
+      'start the game': StartGameMsg
     }
 
   def deserialize(self, msg_json : str):
@@ -39,16 +43,19 @@ class MsgToSend(object):
   
   def __init__(self, websocket, **kwargs):
     self.websocket = websocket
+    self.type = kwargs['message']
     self.content = json.dumps(kwargs)
   
   def __eq__(self, other):
-    return self.content == other.content and self.websocket == other.websocket
+    return self.content == other.content and \
+      self.websocket == other.websocket and \
+      self.type == other.type
 
   def __hash__(self):
-    return hash((self.content, self.websocket))
+    return hash((self.type, self.content, self.websocket))
 
   def __repr__(self):
-    return f'MsgToSend({self.websocket}, {self.content})'
+    return f'MsgToSend({self.websocket}, {self.type}, {self.content})'
   
   async def send(self):
     await self.websocket.send(self.content)

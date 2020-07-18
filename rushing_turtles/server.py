@@ -6,7 +6,7 @@ import logging
 from typing import List
 
 from rushing_turtles.game_controller import GameController
-from rushing_turtles.messages import MessageDeserializer
+from rushing_turtles.messages import MessageDeserializer, MsgToSend
 
 class GameServer(object):
 
@@ -16,15 +16,23 @@ class GameServer(object):
 
   async def serve(self, websocket, path):
     async for message in websocket:
-      deserialized_message = self.deserializer.deserialize(message)
-      messages_to_send = self.controller.handle(deserialized_message, websocket)
+      try:
+        print(message)
+        
+        deserialized_message = self.deserializer.deserialize(message)
+        messages_to_send = self.controller.handle(deserialized_message, websocket)
 
-      if messages_to_send:
-        if isinstance(messages_to_send, list):
-          for msg in messages_to_send:
-            await msg.send()
-        else:
-          await messages_to_send.send()
+        if messages_to_send:
+          if isinstance(messages_to_send, list):
+            for msg in messages_to_send:
+              await msg.send()
+          else:
+            await messages_to_send.send()
+      except ValueError as e:
+        logging.error(f'An error occured: {e}')
+        error_msg = MsgToSend(websocket,
+          message='error', details=str(e), offending_message=message)
+        await error_msg.send()
 
 if __name__ == '__main__':
   addr = '0.0.0.0'
@@ -34,7 +42,7 @@ if __name__ == '__main__':
   controller = GameController()
   deserializer = MessageDeserializer()
   server = GameServer(controller, deserializer)
-  
+
   start_server = websockets.serve(server.serve, addr, port)
 
   asyncio.get_event_loop().run_until_complete(start_server)
