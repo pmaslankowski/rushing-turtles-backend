@@ -68,6 +68,7 @@ class GameController(object):
       self.lounge.remove(person)
       self.room.append(person)
 
+      # TODO: wysłać do wszystkich w poczekalni wiadomość can join
       return self._broadcast_room_update()
     elif msg.status == 'join the game':
       if not self.room:

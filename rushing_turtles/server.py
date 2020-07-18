@@ -22,7 +22,7 @@ class GameServer(object):
 
           deserialized_message = self.deserializer.deserialize(message)
           messages_to_send = self.controller.handle(deserialized_message, websocket)
-          self._send_messages(messages_to_send)
+          await self._send_messages(messages_to_send)
         except ValueError as e:
           logging.error(f'An error occured: {e}')
           error_msg = MsgToSend(websocket,
@@ -37,8 +37,8 @@ class GameServer(object):
       if isinstance(messages, list):
         for msg in messages:
           await msg.send()
-        else:
-          await messages.send()
+      else:
+        await messages.send()
 
 if __name__ == '__main__':
   addr = '0.0.0.0'
