@@ -15,24 +15,30 @@ class GameServer(object):
     self.deserializer = deserializer
 
   async def serve(self, websocket, path):
-    async for message in websocket:
-      try:
-        print(message)
-        
-        deserialized_message = self.deserializer.deserialize(message)
-        messages_to_send = self.controller.handle(deserialized_message, websocket)
+    try:
+      async for message in websocket:
+        try:
+          print(f'Message received: {message}')
 
-        if messages_to_send:
-          if isinstance(messages_to_send, list):
-            for msg in messages_to_send:
-              await msg.send()
-          else:
-            await messages_to_send.send()
-      except ValueError as e:
-        logging.error(f'An error occured: {e}')
-        error_msg = MsgToSend(websocket,
-          message='error', details=str(e), offending_message=message)
-        await error_msg.send()
+          deserialized_message = self.deserializer.deserialize(message)
+          messages_to_send = self.controller.handle(deserialized_message, websocket)
+          self._send_messages(messages_to_send)
+        except ValueError as e:
+          logging.error(f'An error occured: {e}')
+          error_msg = MsgToSend(websocket,
+            message='error', details=str(e), offending_message=message)
+          await error_msg.send()
+    finally:
+      messages_to_send = self.controller.disconnected(websocket)
+      await self._send_messages(messages_to_send)
+  
+  async def _send_messages(self, messages):
+    if messages:
+      if isinstance(messages, list):
+        for msg in messages:
+          await msg.send()
+        else:
+          await messages.send()
 
 if __name__ == '__main__':
   addr = '0.0.0.0'

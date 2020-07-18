@@ -4,7 +4,7 @@ import asyncio
 
 from unittest.mock import Mock
 
-from rushing_turtles.server import GameController
+from rushing_turtles.game_controller import GameController, MAX_PLAYERS_IN_ROOM
 from rushing_turtles.messages import MsgToSend
 from rushing_turtles.messages import HelloServerMsg
 from rushing_turtles.messages import WantToJoinMsg
@@ -121,12 +121,62 @@ def test_should_broadcast_room_update_when_another_player_joins_the_room():
     MsgToSend(1, message='room update', list_of_players_in_room=['Piotr', 'Marta'])
   ]
 
+def test_should_emit_limit_on_hello_server_when_there_are_five_players_already():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, f'Player_0'), 0)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+  for i in range(1, MAX_PLAYERS_IN_ROOM):
+    controller.handle(HelloServerMsg(i, f'Player_{i}'), i)
+    controller.handle(WantToJoinMsg('join the game', i), i)
+
+  actual = controller.handle(HelloServerMsg(5, 'Player_5'), 5)
+
+  assert actual == MsgToSend(5, 
+    message='hello client',
+    status='limit',
+    list_of_players_in_room=[f'Player_{i}' for i in range(5)])
+
+def test_should_raise_when_player_tries_to_join_full_room():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, f'Player_0'), 0)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+  for i in range(1, MAX_PLAYERS_IN_ROOM):
+    controller.handle(HelloServerMsg(i, f'Player_{i}'), i)
+    controller.handle(WantToJoinMsg('join the game', i), i)
+  
+  controller.handle(HelloServerMsg(5, 'Player_5'), 5)
+  with pytest.raises(ValueError):
+    controller.handle(WantToJoinMsg('join the game', 5), 5)
+  
 def test_should_raise_when_player_who_is_not_in_room_tries_to_start_the_game():
   controller = GameController()
 
   controller.handle(HelloServerMsg(0, 'Piotr'), 0)
   with pytest.raises(ValueError):
     controller.handle(StartGameMsg(0), 0)
+
+def test_should_remove_player_from_lounge_when_player_disconnects():
+  controller = GameController()
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+
+  controller.disconnected(0)
+
+  with pytest.raises(ValueError):
+    controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+def test_should_remove_player_from_room_when_player_disconnects():
+  controller = GameController()
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+  controller.disconnected(0)
+
+  with pytest.raises(ValueError):
+    controller.handle(StartGameMsg(0), 0)  
 
 def test_should_raise_when_not_first_player_tries_to_start_the_game():
   controller = GameController()
