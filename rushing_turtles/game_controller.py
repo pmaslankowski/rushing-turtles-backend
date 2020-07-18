@@ -61,15 +61,17 @@ class GameController(object):
 
   def _handle_want_to_join(self, msg: WantToJoinMsg, websocket):
     if msg.status == 'create the game':
-      person = self._find_person_in_lounge(msg.player_id)
+      pid = msg.player_id
+      person = self._find_person_in_lounge(pid)
       if self.room:
         raise ValueError('Room is already created')
 
       self.lounge.remove(person)
       self.room.append(person)
 
-      # TODO: wysłać do wszystkich w poczekalni wiadomość can join
-      return self._broadcast_room_update()
+      return self._broadcast_room_update() + \
+        self._broadcast_can_join_except_pid(pid)
+        
     elif msg.status == 'join the game':
       if not self.room:
         raise ValueError('Room does not exist yet')
@@ -89,6 +91,13 @@ class GameController(object):
         list_of_players_in_room=[person.name for person in self.room]
         ) for ws in self.ws2pid.keys()]
   
+  def _broadcast_can_join_except_pid(self, pid):
+    return [MsgToSend(ws, 
+      message='hello client',
+      status='can join',
+      list_of_players_in_room=[person.name for person in self.room]
+      ) for ws in self.ws2pid.keys() if self.ws2pid[ws] != pid]
+
   def _find_person_in_lounge(self, id : int):
     for person in self.lounge:
       if person.id == id:

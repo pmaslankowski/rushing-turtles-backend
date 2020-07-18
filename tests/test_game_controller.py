@@ -116,10 +116,43 @@ def test_should_broadcast_room_update_when_another_player_joins_the_room():
   controller.handle(WantToJoinMsg('create the game', 0), 0)
   actual = controller.handle(WantToJoinMsg('join the game', 1), 1)
 
-  assert actual == [
+  expected = [
     MsgToSend(0, message='room update', list_of_players_in_room=['Piotr', 'Marta']),
     MsgToSend(1, message='room update', list_of_players_in_room=['Piotr', 'Marta'])
   ]
+
+  for msg in expected:
+    assert msg in actual 
+
+def test_should_broadcast_room_update_to_all_players_except_the_one_that_joined_room():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+
+  actual = controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+  expected = MsgToSend(1,
+    message='hello client', 
+    status='can join', 
+    list_of_players_in_room=['Piotr'])
+
+  assert expected in actual
+
+def test_shouldnt_send_can_join_msg_to_player_who_created_the_room():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+
+  actual = controller.handle(WantToJoinMsg('create the game', 0), 0)
+
+  not_expected = MsgToSend(0,
+    message='hello client',
+    status='can join',
+    list_of_players_in_room=['Piotr'])
+
+  assert not_expected not in actual
 
 def test_should_emit_limit_on_hello_server_when_there_are_five_players_already():
   controller = GameController()
