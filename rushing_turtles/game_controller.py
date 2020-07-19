@@ -3,11 +3,12 @@ import logging
 
 from typing import List
 
-from rushing_turtles.messages import  MsgToSend
+from rushing_turtles.messages import MsgToSend
 from rushing_turtles.messages import HelloServerMsg
 from rushing_turtles.messages import WantToJoinMsg
 from rushing_turtles.messages import StartGameMsg
 from rushing_turtles.model.person import Person
+from rushing_turtles.model.game import Game, create_game
 
 MAX_PLAYERS_IN_ROOM = 5
 
@@ -41,16 +42,21 @@ class GameController(object):
           message='hello client',
           status='can create', 
           list_of_players_in_room=[])
-    elif len(self.room) < MAX_PLAYERS_IN_ROOM:
+    elif not self.game and len(self.room) < MAX_PLAYERS_IN_ROOM:
       return MsgToSend(websocket, 
         message='hello client',
         status='can join',
-        list_of_players_in_room=[person.name for person in self.room])
+        list_of_players_in_room=self._get_names_of_players_in_room())
+    elif self.game:
+      return MsgToSend(websocket,
+        message='hello client',
+        status='ongoing',
+        list_of_players_in_room=self._get_names_of_players_in_room())
     else:
       return MsgToSend(websocket, 
         message='hello client', 
         status='limit',
-        list_of_players_in_room=[person.name for person in self.room])
+        list_of_players_in_room=self._get_names_of_players_in_room())
 
   def _is_person_already_connected(self, id : int):
     return id in [person.id for person in self.people]
@@ -125,6 +131,23 @@ class GameController(object):
       raise ValueError(f'Person {person} is not the first player in the room' +
                         ' so he cannot start the game')
 
+    self.game = create_game(self.room)    
+    return self._emit_ongoing_to_players_outside_the_room() + \
+      self._emit_game_ready_to_start_to_players_in_room()
+      
+  def _emit_ongoing_to_players_outside_the_room(self):
+    return [MsgToSend(person.websocket, 
+        message='hello client',
+        status='ongoing',
+        list_of_players_in_room=self._get_names_of_players_in_room()
+      ) for person in self.people if person not in self.room]
+  
+  def _emit_game_ready_to_start_to_players_in_room(self):
+    return [MsgToSend(person.websocket,
+        message='game ready to start', 
+        player_idx=self.game.get_person_idx(person)
+      ) for person in self.room]
+   
   def disconnected(self, websocket):
     person = self._find_person_by_websocket(websocket)
     self.people.remove(person)

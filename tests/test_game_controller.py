@@ -247,3 +247,58 @@ def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_start_game()
 
   with pytest.raises(ValueError):
     controller.handle(StartGameMsg(0), 1)
+
+def test_should_emit_ongoing_when_new_player_connects_after_game_started():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  controller.handle(StartGameMsg(0), 0)
+
+  actual = controller.handle(HelloServerMsg(2, 'Other'), 2)
+
+  assert actual == MsgToSend(2,
+    message='hello client',
+    status='ongoing',
+    list_of_players_in_room=['Piotr', 'Marta']
+  )
+
+def test_should_broadcast_ongoing_to_all_players_outside_the_room_after_game_started():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(HelloServerMsg(2, 'Other'), 2)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  
+  actual = controller.handle(StartGameMsg(0), 0)
+
+  expected_msg = MsgToSend(2, 
+    message='hello client',
+    status='ongoing',
+    list_of_players_in_room=['Piotr', 'Marta'])
+  
+  assert expected_msg in actual
+
+def test_should_broadcast_game_ready_to_start_to_all_players_in_the_room_after_game_started():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+
+  actual = controller.handle(StartGameMsg(0), 0)
+
+
+  expected = [
+    MsgToSend(0, message='game ready to start', player_idx=0),
+    MsgToSend(1, message='game ready to start', player_idx=1)
+  ]
+
+  for msg in expected:
+    assert msg in actual
+

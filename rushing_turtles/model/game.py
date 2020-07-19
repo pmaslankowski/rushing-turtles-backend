@@ -1,6 +1,7 @@
 import random
 
 from typing import List
+from itertools import repeat, chain, product
 
 from rushing_turtles.model.card import Card
 from rushing_turtles.model.player import Player
@@ -112,6 +113,11 @@ class Game(object):
         return idx
     raise ValueError(f'Player {player} does not play in this game')
 
+  def get_person_idx(self, person : Person):
+    for idx, player in enumerate(self.players):
+      if player.person == person:
+        return idx
+    raise ValueError(f'Person {person} is not in this game')
 
 def create_game(people : List[Person]):
   turtles = [Turtle('RED'), Turtle('GREEN'), Turtle('BLUE'), 
@@ -120,31 +126,24 @@ def create_game(people : List[Person]):
   return Game(people, turtles, cards)
 
 def create_cards():
-  colors = ['BLUE', 'RED', 'GREEN', 'YELLOW', 'PURPLE', 'RAINBOW']
+  colors = ['BLUE', 'RED', 'GREEN', 'YELLOW', 'PURPLE']
   actions = ['PLUS_PLUS', 'PLUS', 'MINUS', 'ARROW', 'ARROW_ARROW']
 
-  color_action_repetition = [1, 5, 2, 0, 0]
-  rainbow_action_repetition = [0, 5, 2, 3, 2]
+  regular_repetitions = [1, 5, 2, 0, 0]
+  rainbow_repetitions = [0, 5, 2, 3, 2]
 
-  list_of_cards = []
-  card_id = 1
+  regular_actions = chain.from_iterable((
+    repeat(action, rep) for action, rep 
+      in zip(actions, regular_repetitions)))
 
-  for color in colors[:-1]:
-    list_of_cards_in_color, card_id = generate_cards_for_given_color(card_id, color, actions, color_action_repetition)
-    list_of_cards += list_of_cards_in_color
-
-  list_of_cards_rainbow, last_card_id = generate_cards_for_given_color(card_id, colors[-1], actions, rainbow_action_repetition)
-  list_of_cards += list_of_cards_rainbow
-
-  return list_of_cards
-
-def generate_cards_for_given_color(first_card_id, color, actions, action_repetition):
-  list_of_cards = []
-  card_id = first_card_id
-
-  for action_idx, action in enumerate(actions):
-    for i in range(action_repetition[action_idx]):
-        list_of_cards.append(Card(card_id, color, action))
-        card_id += 1
+  rainbow_actions = chain.from_iterable((
+    repeat(action, rep) for action, rep
+      in zip(actions, rainbow_repetitions)))
   
-  return list_of_cards, card_id
+  all_combinations = chain(
+    product(colors, regular_actions),
+    product(['RAINBOW'], rainbow_actions))
+  
+  return [Card(idx, color, symbol) 
+          for idx, (color, symbol) 
+          in enumerate(all_combinations)]

@@ -224,6 +224,19 @@ def test_play_should_return_none_when_there_is_no_winner_yet(game, people):
   
   assert winner == None
 
+def test_get_person_idx_should_return_idx(game, people):
+  person = people[0]
+
+  actual = game.get_person_idx(person)
+
+  assert actual == 0
+
+def test_get_person_idx_should_raise_when_person_is_not_in_game(game, people):
+  person = Person(2, 'Other')
+
+  with pytest.raises(ValueError):
+    game.get_person_idx(person)
+
 def test_create_game_should_create_game(people):
   game = create_game(people)
 
