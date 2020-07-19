@@ -3,10 +3,11 @@ class Person(object):
   id: int
   name : str
 
-  def __init__(self, id, name):
+  def __init__(self, id, name, websocket=None):
     self.id = id
     self.name = name
-  
+    self.websocket = websocket
+
   def __eq__(self, other):
     return self.id == other.id
   

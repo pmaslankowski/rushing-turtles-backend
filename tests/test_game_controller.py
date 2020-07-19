@@ -99,14 +99,20 @@ def test_should_raise_when_player_wants_to_join_the_room_but_room_doesnt_exist()
   with pytest.raises(ValueError):
     controller.handle(WantToJoinMsg('join the game', 0), 0)
 
-def test_should_raise_when_player_wants_to_join_the_room_but_is_not_in_lounge():
+def test_should_raise_when_player_wants_to_join_the_room_but_is_not_connected():
+  controller = GameController()
+  
+  with pytest.raises(ValueError):
+   controller.handle(WantToJoinMsg('join the game', 0), 0)
+
+def test_should_raise_when_player_wants_to_join_room_that_they_are_already_in():
   controller = GameController()
 
   controller.handle(HelloServerMsg(0, 'Piotr'), 0)
   controller.handle(WantToJoinMsg('create the game', 0), 0)
-  
+
   with pytest.raises(ValueError):
-   controller.handle(WantToJoinMsg('join the game', 0), 0)
+    controller.handle(WantToJoinMsg('join the game', 0), 0)
 
 def test_should_broadcast_room_update_when_another_player_joins_the_room():
   controller = GameController()
@@ -184,15 +190,17 @@ def test_should_raise_when_player_tries_to_join_full_room():
   controller.handle(HelloServerMsg(5, 'Player_5'), 5)
   with pytest.raises(ValueError):
     controller.handle(WantToJoinMsg('join the game', 5), 5)
-  
-def test_should_raise_when_player_who_is_not_in_room_tries_to_start_the_game():
+
+def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_join():
   controller = GameController()
 
   controller.handle(HelloServerMsg(0, 'Piotr'), 0)
-  with pytest.raises(ValueError):
-    controller.handle(StartGameMsg(0), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
 
-def test_should_remove_player_from_lounge_when_player_disconnects():
+  with pytest.raises(ValueError):
+    controller.handle(WantToJoinMsg('create the game', 1), 0)
+
+def test_should_remove_player_from_connected_when_player_disconnects():
   controller = GameController()
   controller.handle(HelloServerMsg(0, 'Piotr'), 0)
 
@@ -211,6 +219,13 @@ def test_should_remove_player_from_room_when_player_disconnects():
   with pytest.raises(ValueError):
     controller.handle(StartGameMsg(0), 0)  
 
+def test_should_raise_when_player_who_is_not_in_room_tries_to_start_the_game():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  with pytest.raises(ValueError):
+    controller.handle(StartGameMsg(0), 0)
+
 def test_should_raise_when_not_first_player_tries_to_start_the_game():
   controller = GameController()
 
@@ -221,3 +236,14 @@ def test_should_raise_when_not_first_player_tries_to_start_the_game():
 
   with pytest.raises(ValueError):
     controller.handle(StartGameMsg(1), 1)
+
+def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_start_game():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+
+  with pytest.raises(ValueError):
+    controller.handle(StartGameMsg(0), 1)

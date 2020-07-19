@@ -10,13 +10,11 @@ from rushing_turtles.messages import StartGameMsg
 from rushing_turtles.model.person import Person
 
 MAX_PLAYERS_IN_ROOM = 5
-# TODO: tutaj się przyda jakiś duży refactor
-# TODO: upewnić się, że pid przysłany przez playera zgadza się z websocketem
+
 class GameController(object):
   
   def __init__(self):
-    self.ws2pid = {}
-    self.lounge = []
+    self.people = []
     self.room = []
     self.game = None
 
@@ -36,9 +34,8 @@ class GameController(object):
       raise ValueError(f'Person with id = {msg.player_id} is already' +
                           'connected to the server')
 
-    self.ws2pid[websocket] = msg.player_id
-    person = Person(msg.player_id, msg.player_name)
-    self.lounge.append(person)
+    person = Person(msg.player_id, msg.player_name, websocket)
+    self.people.append(person)
     
     if not self.room:
         return MsgToSend(websocket,
@@ -57,73 +54,87 @@ class GameController(object):
         list_of_players_in_room=[person.name for person in self.room])
 
   def _is_person_already_connected(self, id : int):
-    return id in self.ws2pid 
+    return id in [person.id for person in self.people]
 
   def _handle_want_to_join(self, msg: WantToJoinMsg, websocket):
+    pid = msg.player_id
+    person = self._find_person(pid)
+    self._ensure_that_player_not_poses_as_somebody_else(person, websocket)
+
     if msg.status == 'create the game':
-      pid = msg.player_id
-      person = self._find_person_in_lounge(pid)
       if self.room:
         raise ValueError('Room is already created')
-
-      self.lounge.remove(person)
       self.room.append(person)
-
       return self._broadcast_room_update() + \
         self._broadcast_can_join_except_pid(pid)
         
     elif msg.status == 'join the game':
       if not self.room:
         raise ValueError('Room does not exist yet')
-      
       if len(self.room) >= MAX_PLAYERS_IN_ROOM:
         raise ValueError('Room is full')
+      if person in self.room:
+        raise ValueError(f'Person {person} is already in the room')
 
-      person = self._find_person_in_lounge(msg.player_id)
-      self.lounge.remove(person)
       self.room.append(person)
 
       return self._broadcast_room_update()
 
-  def _broadcast_room_update(self):
-    return [MsgToSend(ws, 
-        message='room update', 
-        list_of_players_in_room=[person.name for person in self.room]
-        ) for ws in self.ws2pid.keys()]
-  
-  def _broadcast_can_join_except_pid(self, pid):
-    return [MsgToSend(ws, 
-      message='hello client',
-      status='can join',
-      list_of_players_in_room=[person.name for person in self.room]
-      ) for ws in self.ws2pid.keys() if self.ws2pid[ws] != pid]
+  def _ensure_that_player_not_poses_as_somebody_else(self, person, websocket):
+    if person.websocket != websocket:
+      raise ValueError(f"You can't play as player {person} - " + 
+                        "he is already controlled by someone else")
 
-  def _find_person_in_lounge(self, id : int):
-    for person in self.lounge:
+  def _broadcast_room_update(self):
+    return self._broadcast(lambda ws: 
+      MsgToSend(ws, 
+        message='room update', 
+        list_of_players_in_room=self._get_names_of_players_in_room()
+      ))
+
+  def _broadcast(self, producer):
+    return [producer(person.websocket) for person in self.people]
+
+  def _get_names_of_players_in_room(self):
+    return [person.name for person in self.room]
+
+  def _broadcast_can_join_except_pid(self, pid):
+    return self._broadcast_except(lambda ws:
+      MsgToSend(ws, 
+        message='hello client',
+        status='can join',
+        list_of_players_in_room=self._get_names_of_players_in_room()
+      ), pid)
+
+  def _broadcast_except(self, producer, pid):
+    return [producer(person.websocket) for person in self.people if person.id != pid]
+  
+  def _find_person(self, id : int):
+    for person in self.people:
       if person.id == id:
         return person
-    raise ValueError(f'Person with id = {id} is not in lounge')
+    raise ValueError(f'Person with id = {id} is not connected')
   
   def _handle_start_game(self, msg : StartGameMsg, websocket):
-    idx_in_room = self._find_person_idx_in_room(msg.player_id)
-    if idx_in_room != 0:
-      raise ValueError(f'Person with id = {id} is not the first person in the room' +
-                        ' so they cannot start the game')
+    pid = msg.player_id
+    person = self._find_person(pid)
+    self._ensure_that_player_not_poses_as_somebody_else(person, websocket)
 
-  def _find_person_idx_in_room(self, id: int):
-    for idx, person in enumerate(self.room):
-      if person.id == id:
-        return idx
-    raise ValueError(f'Person with id = {id} is not in the room')
+    if person not in self.room:
+      raise ValueError(f'Person {person} is not in the room')
+    if self.room[0] != person:
+      raise ValueError(f'Person {person} is not the first player in the room' +
+                        ' so he cannot start the game')
 
-  # TODO: można dodać listę wszystkich ludzi (może zamiast lounge) i znajdować ich po pid w tej liście
-  # wtedy wyszukiwanie w lounge i room będzie łatwiejsze
   def disconnected(self, websocket):
-    pid = self.ws2pid.pop(websocket)
-    if pid in [person.id for person in self.lounge]:
-      person = self._find_person_in_lounge(pid)
-      self.lounge.remove(person)
-    if pid in [person.id for person in self.room]:
-      person_idx_in_room = self._find_person_idx_in_room(pid)
-      self.room.remove(self.room[person_idx_in_room])
+    person = self._find_person_by_websocket(websocket)
+    self.people.remove(person)
+    if person in self.room:
+      self.room.remove(person)
       return self._broadcast_room_update()
+
+  def _find_person_by_websocket(self, websocket):
+    for person in self.people:
+      if person.websocket == websocket:
+        return person
+    raise ValueError(f'There is no person corresponding to given websocket: {websocket}')
