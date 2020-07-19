@@ -28,7 +28,6 @@ class GameController(object):
     else:
       logging.warning(f'Unhandled message: {msg}')
 
-
   def _handle_hello_server(self, msg : HelloServerMsg, websocket):
     if self._is_person_already_connected(msg.player_id):
       raise ValueError(f'Person with id = {msg.player_id} is already' +

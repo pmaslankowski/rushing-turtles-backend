@@ -1,7 +1,7 @@
 import random
 import pytest
 
-from rushing_turtles.model.game import Game, HAND_SIZE
+from rushing_turtles.model.game import Game, HAND_SIZE, create_game
 from rushing_turtles.model.player import Player
 from rushing_turtles.model.board import Board
 from rushing_turtles.model.turtle import Turtle
@@ -223,6 +223,13 @@ def test_play_should_return_none_when_there_is_no_winner_yet(game, people):
   winner = game.play(player, Action(Card(0, 'RED', 'PLUS')))
   
   assert winner == None
+
+def test_create_game_should_create_game(people):
+  game = create_game(people)
+
+  assert len(game.players) == len(people)
+  assert len(game.turtles) == 5
+  assert len(game.stacks.available_cards) == 42
 
 @pytest.fixture
 def people():
