@@ -237,6 +237,24 @@ def test_get_person_idx_should_raise_when_person_is_not_in_game(game, people):
   with pytest.raises(ValueError):
     game.get_person_idx(person)
 
+def test_get_card_should_raise_when_card_not_exists_in_the_game(game):
+  with pytest.raises(ValueError):
+    game.get_card(42)
+
+def test_get_card_should_return_card_with_given_id(game):
+  actual = game.get_card(0)
+
+  assert actual == Card(0, 'RED', 'PLUS')
+
+def test_get_persons_cards_should_raise_when_person_is_not_a_player(game):
+  with pytest.raises(ValueError):
+    game.get_persons_cards(Person(2, 'Other'))
+
+def test_get_persons_cards_should_return_cards(game):
+  cards = game.get_persons_cards(Person(0, 'Piotr'))
+
+  assert cards == game.players[0].cards
+
 def test_create_game_should_create_game(people):
   game = create_game(people)
 

@@ -6,6 +6,7 @@ HelloServerMsg = namedtuple('HelloServerMsg', 'player_id, player_name')
 WantToJoinMsg = namedtuple('WantToJoinTheGame', 'status, player_id')
 StartGameMsg = namedtuple('StartGame', 'player_id')
 ReadyToReceiveGameState = namedtuple('ReadyToReceiveGameState', 'player_id')
+PlayCardMsg = namedtuple('PlayCardMsg', 'player_id, card_id, picked_color')
 
 TYPE_KEY = 'message'
 
@@ -16,7 +17,8 @@ class MessageDeserializer(object):
       'hello server': HelloServerMsg,
       'want to join the game': WantToJoinMsg,
       'start the game': StartGameMsg,
-      'ready to receive game state': ReadyToReceiveGameState
+      'ready to receive game state': ReadyToReceiveGameState,
+      'play card': PlayCardMsg
     }
 
   def deserialize(self, msg_json : str):

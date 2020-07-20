@@ -8,10 +8,12 @@ from rushing_turtles.messages import HelloServerMsg
 from rushing_turtles.messages import WantToJoinMsg
 from rushing_turtles.messages import StartGameMsg
 from rushing_turtles.messages import ReadyToReceiveGameState
+from rushing_turtles.messages import PlayCardMsg
 from rushing_turtles.model.person import Person
 from rushing_turtles.model.game import Game, create_game
 from rushing_turtles.model.board import Board
 from rushing_turtles.model.card import Card
+from rushing_turtles.model.action import Action
 
 MAX_PLAYERS_IN_ROOM = 5
 
@@ -31,6 +33,8 @@ class GameController(object):
       return self._handle_start_game(msg, websocket)
     elif isinstance(msg, ReadyToReceiveGameState):
       return self._handle_ready_to_receive_game_state(msg, websocket)
+    elif isinstance(msg, PlayCardMsg):
+      return self._handle_play_card(msg, websocket)
     else:
       logging.warning(f'Unhandled message: {msg}')
 
@@ -155,7 +159,7 @@ class GameController(object):
         player_idx=self.game.get_person_idx(person)
       ) for person in self.room]
   
-  def _handle_ready_to_receive_game_state(self, msg, websocket):
+  def _handle_ready_to_receive_game_state(self, msg: ReadyToReceiveGameState, websocket):
     pid = msg.player_id
     person = self._find_person(pid)
     self._ensure_that_player_not_poses_as_somebody_else(person, websocket)
@@ -186,12 +190,42 @@ class GameController(object):
       return None
     return {'card_id': card.id, 'color': card.color, 'action': card.symbol}
 
+  def _handle_play_card(self, msg : PlayCardMsg, websocket):
+    pid = msg.player_id
+    person = self._find_person(pid)
+    self._ensure_that_player_not_poses_as_somebody_else(person, websocket)
+
+    if not self.game:
+      raise ValueError('The game has not started yet')
+    
+    card = self.game.get_card(msg.card_id)
+    action = Action(card, msg.picked_color)
+    self.game.play(person, action)
+    new_cards = self.game.get_persons_cards(person)
+
+    game_state_updated_msgs = self._broadcast(lambda ws: MsgToSend(ws,
+      message='game state updated',
+      board=self._board_to_dict(self.game.board),
+      active_player_idx=self.game._find_player_idx(self.game.active_player),
+      recently_played_card=self._card_to_dict(self.game.stacks.get_recent())
+    ))
+
+    player_cards_updated_msg = [MsgToSend(websocket, 
+      message='player cards updated',
+      player_cards=[self._card_to_dict(card) for card in new_cards])]
+
+    return game_state_updated_msgs + player_cards_updated_msg
+
   def disconnected(self, websocket):
     person = self._find_person_by_websocket(websocket)
     self.people.remove(person)
-    if person in self.room:
-      self.room.remove(person)
-      return self._broadcast_room_update()
+    #if person in self.room:
+    #  self.room.remove(person)
+    #  return self._broadcast_room_update()
+    
+    # TODO: to nie jest najlepsze rozwiązanie, ale tymczasowo usuwamy grę jeśli ktokolwiek wychodzi
+    self.game = None
+    self.room = []
 
   def _find_person_by_websocket(self, websocket):
     for person in self.people:

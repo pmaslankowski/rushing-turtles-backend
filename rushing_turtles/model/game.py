@@ -15,6 +15,7 @@ HAND_SIZE = 5
 
 # TODO: handle the case when autonomous turtle wins. Currently this situation leads to exception 
 class Game(object):
+  cards: List[Card]
   stacks: CardStacks
   turtles : List[Turtle]
   board : Board
@@ -27,6 +28,7 @@ class Game(object):
     if len(cards) < HAND_SIZE * len(people):
       raise ValueError(f'Not enough cards for {len(people)} players')
 
+    self.cards = cards
     self.stacks = CardStacks(cards)
     self.turtles = turtles
     self.board = Board(turtles)
@@ -82,6 +84,12 @@ class Game(object):
         return turtle
     raise ValueError(f'{color} turtle doesnt exist in this game')
   
+  def get_card(self, id : int):
+    for card in self.cards:
+      if card.id == id:
+        return card
+    raise ValueError(f'Card with id {id} does not exist in this game')
+  
   def _update_player_cards_and_stacks(self, player : Player, action : Action):
     self.stacks.put(action.card)
     player.remove_card(action.card)
@@ -118,6 +126,10 @@ class Game(object):
       if player.person == person:
         return idx
     raise ValueError(f'Person {person} is not in this game')
+
+  def get_persons_cards(self, person : Person):
+    player = self._find_player(person)
+    return player.cards
 
 def create_game(people : List[Person]):
   turtles = [Turtle('RED'), Turtle('GREEN'), Turtle('BLUE'), 
