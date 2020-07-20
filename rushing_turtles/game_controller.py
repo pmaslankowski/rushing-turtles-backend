@@ -7,8 +7,11 @@ from rushing_turtles.messages import MsgToSend
 from rushing_turtles.messages import HelloServerMsg
 from rushing_turtles.messages import WantToJoinMsg
 from rushing_turtles.messages import StartGameMsg
+from rushing_turtles.messages import ReadyToReceiveGameState
 from rushing_turtles.model.person import Person
 from rushing_turtles.model.game import Game, create_game
+from rushing_turtles.model.board import Board
+from rushing_turtles.model.card import Card
 
 MAX_PLAYERS_IN_ROOM = 5
 
@@ -26,6 +29,8 @@ class GameController(object):
       return self._handle_want_to_join(msg, websocket)
     elif isinstance(msg, StartGameMsg):
       return self._handle_start_game(msg, websocket)
+    elif isinstance(msg, ReadyToReceiveGameState):
+      return self._handle_ready_to_receive_game_state(msg, websocket)
     else:
       logging.warning(f'Unhandled message: {msg}')
 
@@ -80,6 +85,8 @@ class GameController(object):
         raise ValueError('Room is full')
       if person in self.room:
         raise ValueError(f'Person {person} is already in the room')
+      if self.game:
+        raise ValueError(f'Game has already started')
 
       self.room.append(person)
 
@@ -134,7 +141,7 @@ class GameController(object):
     self.game = create_game(self.room)    
     return self._emit_ongoing_to_players_outside_the_room() + \
       self._emit_game_ready_to_start_to_players_in_room()
-      
+
   def _emit_ongoing_to_players_outside_the_room(self):
     return [MsgToSend(person.websocket, 
         message='hello client',
@@ -147,7 +154,38 @@ class GameController(object):
         message='game ready to start', 
         player_idx=self.game.get_person_idx(person)
       ) for person in self.room]
-   
+  
+  def _handle_ready_to_receive_game_state(self, msg, websocket):
+    pid = msg.player_id
+    person = self._find_person(pid)
+    self._ensure_that_player_not_poses_as_somebody_else(person, websocket)
+    if not self.game:
+      raise ValueError('Game has not started yet')
+    
+    player = self.game._find_player(person)
+    return MsgToSend(websocket,
+      message='full game state',
+      board=self._board_to_dict(self.game.board),
+      players_names=self._get_names_of_players_in_room(),
+      active_player_idx=self.game._find_player_idx(self.game.active_player),
+      player_cards=[self._card_to_dict(card) for card in player.cards],
+      player_turtle_color=player.turtle.color,
+      recently_played_card=self._card_to_dict(self.game.stacks.get_recent())
+    )
+  
+  def _board_to_dict(self, board : Board):
+    return {
+      'turtles_in_game_positions': [[str(turtle) for turtle in stack] 
+        for stack in board.further_fields],
+      'turtles_on_start_positions': [[str(turtle) for turtle in stack]
+        for stack in board.start_field]
+    }  
+
+  def _card_to_dict(self, card : Card):
+    if not card:
+      return None
+    return {'card_id': card.id, 'color': card.color, 'action': card.symbol}
+
   def disconnected(self, websocket):
     person = self._find_person_by_websocket(websocket)
     self.people.remove(person)

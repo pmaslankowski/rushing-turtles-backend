@@ -15,8 +15,9 @@ def test_get_new_should_return_first_card():
 def test_get_recent_should_raise_when_stack_is_empty():
   stacks = CardStacks([])
 
-  with pytest.raises(ValueError):
-    stacks.get_recent()
+  actual = stacks.get_recent()
+
+  assert actual is None
     
 def test_get_recent_should_return_recent_card():
   card = Card(0, 'RED', 'PLUS')

@@ -18,7 +18,7 @@ class CardStacks(object):
   
   def get_recent(self) -> Card:
     if not self.played_cards:
-      raise ValueError("Card stack is empty - it doesn't have any recent card")
+      return None
     return self.played_cards[0]
 
   def get_new(self) -> Card:

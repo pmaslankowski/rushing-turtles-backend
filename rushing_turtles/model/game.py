@@ -123,6 +123,7 @@ def create_game(people : List[Person]):
   turtles = [Turtle('RED'), Turtle('GREEN'), Turtle('BLUE'), 
              Turtle('PURPLE'), Turtle('YELLOW')]
   cards = create_cards()
+  random.shuffle(cards)
   return Game(people, turtles, cards)
 
 def create_cards():

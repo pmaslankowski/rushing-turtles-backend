@@ -1,4 +1,5 @@
 import pytest
+import random
 import json
 import asyncio
 
@@ -9,7 +10,13 @@ from rushing_turtles.messages import MsgToSend
 from rushing_turtles.messages import HelloServerMsg
 from rushing_turtles.messages import WantToJoinMsg
 from rushing_turtles.messages import StartGameMsg
+from rushing_turtles.messages import ReadyToReceiveGameState
 from rushing_turtles.model.person import Person
+
+
+@pytest.fixture(autouse=True)
+def init_rand_seed():
+  random.seed(0)
 
 def test_should_emit_can_create_when_first_player_joins():
   controller = GameController()
@@ -302,3 +309,69 @@ def test_should_broadcast_game_ready_to_start_to_all_players_in_the_room_after_g
   for msg in expected:
     assert msg in actual
 
+def test_should_rasie_when_player_tries_to_join_to_ongoing_game():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  controller.handle(StartGameMsg(0), 0)
+  controller.handle(HelloServerMsg(2, 'Other'), 2)
+
+  with pytest.raises(ValueError):
+    controller.handle(WantToJoinMsg('join the game', 2), 2)
+
+def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_ready_to_receive():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  controller.handle(StartGameMsg(0), 0)
+
+  with pytest.raises(ValueError):
+    controller.handle(ReadyToReceiveGameState(0), 1)  
+
+def test_should_raise_on_ready_to_receive_game_state_when_game_is_not_active():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+
+  with pytest.raises(ValueError):
+    controller.handle(ReadyToReceiveGameState(0), 0)  
+
+def test_should_emit_full_game_state_on_ready_to_receive_game_state():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  controller.handle(StartGameMsg(0), 0)
+
+  actual = controller.handle(ReadyToReceiveGameState(0), 0)
+
+  expected = MsgToSend(0,
+    message='full game state',
+    board={
+      'turtles_in_game_positions': [[] for _ in range(9)],
+      'turtles_on_start_positions': [['RED'], ['GREEN'], ['BLUE'], ['PURPLE'], ['YELLOW']],
+    },
+    players_names=['Piotr', 'Marta'],
+    active_player_idx=0,
+    player_cards=[
+      {"card_id": 28, "color": "YELLOW", "action": "PLUS"},
+      {"card_id": 12, "color": "RED", "action": "PLUS"},
+      {"card_id": 45, "color": "RAINBOW", "action": "MINUS"},
+      {"card_id": 41, "color": "RAINBOW", "action": "PLUS"},
+      {"card_id": 38, "color": "PURPLE", "action": "MINUS"}],
+    player_turtle_color='GREEN',
+    recently_played_card=None
+  )
+
+  assert actual == expected

@@ -33,3 +33,4 @@ class Card(object):
 
   def __repr__(self):
     return f'Card(id={self.id}, color={self.color}, symbol={self.symbol})'
+    
