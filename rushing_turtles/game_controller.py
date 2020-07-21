@@ -179,9 +179,9 @@ class GameController(object):
   
   def _board_to_dict(self, board : Board):
     return {
-      'turtles_in_game_positions': [[str(turtle) for turtle in stack] 
+      'turtles_in_game_positions': [list(reversed([str(turtle) for turtle in stack])) 
         for stack in board.further_fields],
-      'turtles_on_start_positions': [[str(turtle) for turtle in stack]
+      'turtles_on_start_positions': [list(reversed([str(turtle) for turtle in stack]))
         for stack in board.start_field]
     }  
 
@@ -200,7 +200,7 @@ class GameController(object):
     
     card = self.game.get_card(msg.card_id)
     action = Action(card, msg.picked_color)
-    self.game.play(person, action)
+    winner_ranking = self.game.play(person, action)
     new_cards = self.game.get_persons_cards(person)
 
     game_state_updated_msgs = self._broadcast(lambda ws: MsgToSend(ws,
@@ -214,7 +214,18 @@ class GameController(object):
       message='player cards updated',
       player_cards=[self._card_to_dict(card) for card in new_cards])]
 
-    return game_state_updated_msgs + player_cards_updated_msg
+    game_won_msgs = []
+    if winner_ranking:
+      game_won_msgs = self._broadcast(lambda ws: MsgToSend(ws,
+        message='game won',
+        winner_name=winner_ranking[0].name,
+        sorted_list_of_player_places=[person.name for person in winner_ranking],
+        sorted_list_of_players_turtle_colors=
+          [self.game._find_player(person).turtle.color 
+            for person in winner_ranking]
+      ))
+
+    return game_state_updated_msgs + player_cards_updated_msg + game_won_msgs
 
   def disconnected(self, websocket):
     person = self._find_person_by_websocket(websocket)
@@ -222,7 +233,7 @@ class GameController(object):
     #if person in self.room:
     #  self.room.remove(person)
     #  return self._broadcast_room_update()
-    
+
     # TODO: to nie jest najlepsze rozwiązanie, ale tymczasowo usuwamy grę jeśli ktokolwiek wychodzi
     self.game = None
     self.room = []

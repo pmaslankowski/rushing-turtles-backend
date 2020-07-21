@@ -207,15 +207,15 @@ def test_next_player_should_keep_getting_hands_until_he_can_move(people, turtles
 
   assert game.players[1].cards == cards[3*HAND_SIZE+1:4*HAND_SIZE+1]
 
-def test_play_should_return_winner_when_player_wins(game, people):
+def test_play_should_return_ranking_when_someone_wins(game, people):
   for _ in range(8):
     active = game.active_player
     game.play(active.person, Action(active.cards[0]))
   
   active = game.active_player
-  winner = game.play(active.person, Action(active.cards[0]))  
+  ranking = game.play(active.person, Action(active.cards[0]))  
 
-  assert winner == people[1]
+  assert ranking == [people[1], people[0]]
 
 def test_play_should_return_none_when_there_is_no_winner_yet(game, people):
   player = people[0]

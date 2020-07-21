@@ -62,8 +62,9 @@ class Game(object):
       self._move_turtle(action)
       self._update_player_cards_and_stacks(player, action)
 
+      # TODO: test do przypadku, gdy żółwi jest więcej niż graczy
       if self._has_winner():
-        return self._get_winner()
+        return self._get_ranking()
       
       self._change_active_player()
       self._ensure_player_can_move(self.active_player)
@@ -74,6 +75,7 @@ class Game(object):
         return player
     raise ValueError(f'Person {person} does not play in this game')  
   
+  # TODO: dodać walidację, że jeśli gracz używa karty ze strzałką, to rusza się ostatnim żółwiem
   def _move_turtle(self, action : Action):
     turtle = self._find_turtle(action.get_color())
     self.board.move(turtle, action.get_offset())
@@ -99,10 +101,11 @@ class Game(object):
   def _has_winner(self):
     return self.board.has_anyone_finished()
     
-  def _get_winner(self):
-    winning_turtle = self.board.get_top_last_turtle()
-    winner = self._find_player_by_turtle(winning_turtle)
-    return winner.person
+  def _get_ranking(self):
+    ranking = self.board.get_ranking()
+    player_turtles = [player.turtle for player in self.players]
+    return [self._find_player_by_turtle(turtle).person for turtle in ranking if turtle in player_turtles]
+    
 
   def _find_player_by_turtle(self, turtle : Turtle):
     for player in self.players:

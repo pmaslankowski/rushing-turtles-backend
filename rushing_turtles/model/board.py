@@ -27,9 +27,20 @@ class Board(object):
   def has_anyone_finished(self):
     return bool(self.further_fields[-1])
   
-  def get_top_last_turtle(self):
-    assert self.has_anyone_finished()
-    return self.further_fields[-1][0]
+  # TODO: testy
+  def get_ranking(self):
+    return sorted(self.turtles, 
+      key=lambda x: (self._find_pos(x), self._find_height(x), x.color), 
+      reverse=True)
+
+  # TODO: wyczyścić
+  def _find_height(self, turtle : Turtle):
+    pos = self._find_pos(turtle)
+    if pos > 0:
+      return self.further_fields[pos-1].index(turtle)
+    else:
+      stack_idx, stack = self._find_stack_in_start(turtle)
+      return stack.index(turtle)
 
   def move(self, turtle: Turtle, offset: int) -> None:
     pos = self._find_pos(turtle)

@@ -13,6 +13,7 @@ from rushing_turtles.messages import StartGameMsg
 from rushing_turtles.messages import ReadyToReceiveGameState
 from rushing_turtles.messages import PlayCardMsg
 from rushing_turtles.model.person import Person
+from rushing_turtles.model.turtle import Turtle
 
 
 @pytest.fixture(autouse=True)
@@ -449,6 +450,37 @@ def test_should_broadcast_game_state_update_after_player_moved():
       active_player_idx=1,
       recently_played_card={"card_id": 28, "color": "YELLOW", "action": "PLUS"}
     ),
+  ]
+
+  for expected_msg in expected_msgs:
+    assert expected_msg in actual
+
+def test_should_broadcast_game_won_when_someone_wins():
+  controller = GameController()
+
+  controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+  controller.handle(HelloServerMsg(1, 'Marta'), 1)
+  controller.handle(WantToJoinMsg('create the game', 0), 0)
+  controller.handle(WantToJoinMsg('join the game', 1), 1)
+  controller.handle(StartGameMsg(0), 0)
+  
+  controller.game.board.move(Turtle('YELLOW'), 8)
+
+  actual = controller.handle(PlayCardMsg(0, 28, None), 0)
+
+  expected_msgs = [
+    MsgToSend(0,
+      message='game won',
+      winner_name='Marta',
+      sorted_list_of_player_places=['Marta', 'Piotr'],
+      sorted_list_of_players_turtle_colors=['YELLOW', 'GREEN']
+    ),
+    MsgToSend(1,
+      message='game won',
+      winner_name='Marta',
+      sorted_list_of_player_places=['Marta', 'Piotr'],
+      sorted_list_of_players_turtle_colors=['YELLOW', 'GREEN']
+    )
   ]
 
   for expected_msg in expected_msgs:
