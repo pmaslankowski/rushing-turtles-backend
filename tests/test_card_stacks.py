@@ -63,7 +63,7 @@ def test_get_new_should_return_reshuffled_cards_when_all_cards_were_played():
 
   card1 = Card(0, 'RED', 'PLUS')
   card2 = Card(1, 'GREEN', 'MINUS')
-  card3 = Card(2, 'BLUE', 'ARROW')
+  card3 = Card(2, 'RAINBOW', 'ARROW')
   stacks = CardStacks([card1, card2, card3])
 
   for _ in range(3):

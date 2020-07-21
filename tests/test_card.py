@@ -10,6 +10,14 @@ def test_should_raise_when_symbol_is_not_valid():
   with pytest.raises(ValueError):
     Card(0, 'RED', 'wrong symbol')
 
+def test_should_raise_when_not_rainbow_card_has_arrow_symbol():
+  with pytest.raises(ValueError):
+    Card(0, 'RED', 'ARROW')
+  
+def test_should_raise_when_not_rainbow_card_has_double_arrow_symbol():
+  with pytest.raises(ValueError):
+    Card(0, 'RED', 'ARROW_ARROW')
+
 offsets = [
   ('PLUS', 1),
   ('PLUS_PLUS', 2),
@@ -19,7 +27,7 @@ offsets = [
 ]
 @pytest.mark.parametrize('symbol, expected', offsets)
 def test_offset_should_return_corresponding_offset(symbol, expected):
-  card = Card(0, 'RED', symbol)
+  card = Card(0, 'RAINBOW', symbol)
   
   actual = card.offset
 

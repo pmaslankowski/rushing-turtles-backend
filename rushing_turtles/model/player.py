@@ -17,7 +17,6 @@ class Player(object):
   def has_card(self, card : Card):
     return card in self.cards
 
-  # TODO: testy do obu metod
   def add_card(self, card : Card):
     self.cards.insert(0, card)
 

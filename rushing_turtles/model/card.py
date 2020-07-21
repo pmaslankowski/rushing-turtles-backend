@@ -16,6 +16,9 @@ class Card(object):
 
     if symbol not in OFFSETS.keys():
       raise ValueError(f'Wrong card symbol: {symbol}')
+    
+    if symbol in ['ARROW', 'ARROW_ARROW'] and color != 'RAINBOW':
+      raise ValueError('Only rainbow cards can have arrows symbol')
 
     self.id = id
     self.color = color

@@ -64,7 +64,7 @@ def test_new_card_should_be_the_first_of_player_cards(person, turtle):
 def test_new_card_should_add_card_for_player_with_two_cards(person, turtle):
   cards = [Card(0, 'RED', 'PLUS'), Card(1, 'GREEN', 'MINUS')]
   player = Player(person, turtle, cards)
-  card = Card(2, 'RED', 'ARROW')
+  card = Card(2, 'RAINBOW', 'ARROW')
 
   player.add_card(card)
 

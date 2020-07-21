@@ -9,7 +9,9 @@ class Action(object):
       raise ValueError(
         f'Action color can be set on actions concerning rainbow cards only.' 
         +' Card color: {card.color}')
-      
+    if not color and card.is_rainbow():
+      raise ValueError('Action color must be set on actions concerning rainbow cards')
+
     self.card = card
     self.color = color
   
@@ -17,4 +19,7 @@ class Action(object):
     return self.card.offset
 
   def get_color(self):
-    return self.color if self.card.is_rainbow() else self.card.color 
+    return self.color if self.card.is_rainbow() else self.card.color
+
+  def does_move_last_turtle(self):
+    return self.card.symbol in ['ARROW', 'ARROW_ARROW']

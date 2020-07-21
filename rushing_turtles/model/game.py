@@ -13,7 +13,6 @@ from rushing_turtles.model.turtle import Turtle
 
 HAND_SIZE = 5
 
-# TODO: handle the case when autonomous turtle wins. Currently this situation leads to exception 
 class Game(object):
   cards: List[Card]
   stacks: CardStacks
@@ -62,7 +61,6 @@ class Game(object):
       self._move_turtle(action)
       self._update_player_cards_and_stacks(player, action)
 
-      # TODO: test do przypadku, gdy żółwi jest więcej niż graczy
       if self._has_winner():
         return self._get_ranking()
       
@@ -75,9 +73,12 @@ class Game(object):
         return player
     raise ValueError(f'Person {person} does not play in this game')  
   
-  # TODO: dodać walidację, że jeśli gracz używa karty ze strzałką, to rusza się ostatnim żółwiem
   def _move_turtle(self, action : Action):
     turtle = self._find_turtle(action.get_color())
+    if action.does_move_last_turtle() and not self.board.is_last(turtle):
+      raise ValueError('Arrow card can move only the last turtle.' + \
+        f'Turtle {turtle} is not one of the last turtles')
+
     self.board.move(turtle, action.get_offset())
   
   def _find_turtle(self, color : str):

@@ -95,7 +95,31 @@ def test_should_raise_when_turtle_with_given_color_doesnt_exist(cards, people, g
   
   with pytest.raises(ValueError):
     game.play(player, Action(Card(0, 'BLUE', 'PLUS')))
-  
+
+def test_should_raise_when_player_plays_arrow_with_incorrect_color(people, cards, turtles):
+  player = people[0]
+  all_cards = [Card(4*HAND_SIZE, 'RAINBOW', 'ARROW')] + cards
+  game = Game(people, turtles, all_cards)
+
+  for _ in range(2):
+    active = game.active_player
+    game.play(active.person, Action(active.cards[-1]))
+
+  with pytest.raises(ValueError):
+    game.play(player, Action(Card(4*HAND_SIZE, 'RAINBOW', 'ARROW'), 'RED'))
+
+def test_should_raise_when_player_plays_double_arrow_with_incorrect_color(people, cards, turtles):
+  player = people[0]
+  all_cards = [Card(4*HAND_SIZE, 'RAINBOW', 'ARROW_ARROW')] + cards
+  game = Game(people, turtles, all_cards)
+
+  for _ in range(2):
+    active = game.active_player
+    game.play(active.person, Action(active.cards[-1]))
+
+  with pytest.raises(ValueError):
+    game.play(player, Action(Card(4*HAND_SIZE, 'RAINBOW', 'ARROW_ARROW'), 'RED'))
+
 def test_corresponding_turtle_should_move(cards, people, game):
   player = people[0]
   
@@ -217,13 +241,29 @@ def test_play_should_return_ranking_when_someone_wins(game, people):
 
   assert ranking == [people[1], people[0]]
 
+def test_play_should_return_ranking_when_autonomous_turtle_is_on_finish(cards, people):
+  turtles = [Turtle('GREEN'), Turtle('RED'), Turtle('YELLOW')]
+  # we add one green card in order to make Piotr win
+  all_cards = [Card(4*HAND_SIZE, 'GREEN', 'PLUS')] + cards
+  game = Game(people, turtles, all_cards)
+
+  # one more move is required becuase we moved the green turtle once
+  for _ in range(8+1):
+    active = game.active_player
+    game.play(active.person, Action(active.cards[0]))
+
+  active = game.active_player
+  ranking = game.play(active.person, Action(active.cards[0]))
+
+  assert ranking == [Person(0, 'Piotr'), Person(1, 'Marta')]
+
 def test_play_should_return_none_when_there_is_no_winner_yet(game, people):
   player = people[0]
   
   winner = game.play(player, Action(Card(0, 'RED', 'PLUS')))
   
   assert winner == None
-
+  
 def test_get_person_idx_should_return_idx(game, people):
   person = people[0]
 

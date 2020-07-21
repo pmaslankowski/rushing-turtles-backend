@@ -298,6 +298,16 @@ def test_is_last_should_return_true_for_turtle_after_move():
 
   assert actual
 
+def test_is_last_should_return_false_when_other_turtle_is_on_start():
+  turtle1 = Turtle('RED')
+  turtle2 = Turtle('BLUE')
+  board = Board([turtle1, turtle2])
+
+  board.move(turtle2, 1)
+  actual = board.is_last(turtle2)
+
+  assert not actual  
+
 def test_is_last_should_return_true_for_last_turtle():
   turtle1 = Turtle('RED')
   turtle2 = Turtle('BLUE')
@@ -462,4 +472,40 @@ def test_get_ranking_should_return_turtles_sorted_by_position_when_no_stacks():
   board.move(turtle2, 1)
   actual = board.get_ranking()
 
-  assert actual == [turtle2, turtle1]  
+  assert actual == [turtle2, turtle1]
+
+def test_get_ranking_should_return_turtles_sorted_by_position_when_there_are_stacks():
+  turtle1 = Turtle('RED')
+  turtle2 = Turtle('GREEN')
+  turtle3 = Turtle('YELLOW')
+  board = Board([turtle1, turtle2, turtle3])
+
+  board.move(turtle1, 3)
+  board.move(turtle2, 2)
+  board.move(turtle3, 2)
+
+  actual = board.get_ranking()
+
+  assert actual == [turtle1, turtle3, turtle2]
+
+def test_get_ranking_should_return_turtles_sorted_by_position_when_stack_is_on_start_too():
+  turtles = [Turtle('RED'), Turtle('YELLOW'), Turtle('GREEN'), 
+    Turtle('PURPLE'), Turtle('BLUE')]
+
+  board = Board(turtles)
+
+  # Turtles 0 and 1 stack on start:
+  board.move(turtles[0], 1)
+  board.move(turtles[1], 1)
+  board.move(turtles[0], -1)
+
+  # Turtles 2 and 3 stack on start:
+  board.move(turtles[2], 1)
+  board.move(turtles[3], 1)
+  board.move(turtles[2], -1)
+
+  board.move(turtles[4], 9)
+
+  actual = board.get_ranking()
+
+  assert actual == [turtles[4], turtles[1], turtles[3], turtles[0], turtles[2]]
