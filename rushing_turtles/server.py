@@ -1,10 +1,11 @@
 import asyncio
 import websockets
-import sys
 import logging
 
 from rushing_turtles.game_controller import GameController
 from rushing_turtles.messages import MessageDeserializer, MsgToSend
+
+CLEAR_DISCONNECTED_PERIOD = 30
 
 
 class GameServer(object):
@@ -48,6 +49,12 @@ class GameServer(object):
             else:
                 await messages.send()
 
+    async def clear_disconnected(self):
+        while True:
+            await asyncio.sleep(CLEAR_DISCONNECTED_PERIOD)
+            logging.info('Clearing disconnected players')
+            self.controller.clear_disconnected()
+
 
 if __name__ == '__main__':
     addr = '0.0.0.0'
@@ -66,4 +73,5 @@ if __name__ == '__main__':
     start_server = websockets.serve(server.serve, addr, port)
 
     asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_until_complete(server.clear_disconnected())
     asyncio.get_event_loop().run_forever()

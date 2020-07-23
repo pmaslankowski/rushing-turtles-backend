@@ -239,25 +239,21 @@ def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_join():
         controller.handle(WantToJoinMsg('create the game', 1), 0)
 
 
-def test_should_remove_player_from_connected_when_player_disconnects():
-    controller = GameController()
-    controller.handle(HelloServerMsg(0, 'Piotr'), 0)
-
-    controller.disconnected(0)
-
-    with pytest.raises(ValueError):
-        controller.handle(WantToJoinMsg('create the game', 0), 0)
-
-
-def test_should_remove_player_from_room_when_player_disconnects():
+def test_should_emit_can_resume_when_player_disconnects_and_reconnects():
     controller = GameController()
     controller.handle(HelloServerMsg(0, 'Piotr'), 0)
     controller.handle(WantToJoinMsg('create the game', 0), 0)
 
     controller.disconnected(0)
 
-    with pytest.raises(ValueError):
-        controller.handle(StartGameMsg(0), 0)
+    actual = controller.handle(HelloServerMsg(0, 'Piotr'), 1)
+
+    assert actual == MsgToSend(
+        1,
+        message='hello client',
+        status='can resume',
+        list_of_players_in_room=['Piotr']
+    )
 
 
 def test_should_raise_when_player_who_is_not_in_room_tries_to_start_the_game():
@@ -554,3 +550,41 @@ def test_should_broadcast_game_won_when_someone_wins():
 
     for expected_msg in expected_msgs:
         assert expected_msg in actual
+
+
+def test_clear_disconnected_should_remove_players_from_room():
+    controller = GameController()
+
+    controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+    controller.handle(HelloServerMsg(1, 'Marta'), 1)
+    controller.handle(WantToJoinMsg('create the game', 0), 0)
+    controller.handle(WantToJoinMsg('join the game', 1), 1)
+    controller.disconnected(0)
+    controller.clear_disconnected()
+
+    actual = controller.handle(HelloServerMsg(2, 'Piotr'), 2)
+
+    assert actual == MsgToSend(
+        2,
+        message='hello client',
+        status='can join',
+        list_of_players_in_room=['Marta']
+    )
+
+
+def test_clear_disconnected_should_clear_game_when_no_players_left_in_room():
+    controller = GameController()
+
+    controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+    controller.handle(WantToJoinMsg('create the game', 0), 0)
+    controller.disconnected(0)
+    controller.clear_disconnected()
+
+    actual = controller.handle(HelloServerMsg(2, 'Piotr'), 2)
+
+    assert actual == MsgToSend(
+        2,
+        message='hello client',
+        status='can create',
+        list_of_players_in_room=[]
+    )

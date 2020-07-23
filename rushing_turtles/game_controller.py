@@ -54,6 +54,12 @@ class GameController(object):
                 message='hello client',
                 status='can create',
                 list_of_players_in_room=[])
+        elif person in self.room:
+            return MsgToSend(
+                websocket,
+                message='hello client',
+                status='can resume',
+                list_of_players_in_room=self._get_names_of_players_in_room())
         elif not self.game and len(self.room) < MAX_PLAYERS_IN_ROOM:
             return MsgToSend(
                 websocket,
@@ -74,7 +80,9 @@ class GameController(object):
                 list_of_players_in_room=self._get_names_of_players_in_room())
 
     def _is_person_already_connected(self, id: int):
-        return id in [person.id for person in self.people]
+        connected = [person.id for person in self.people
+                     if person.is_connected()]
+        return id in connected
 
     def _handle_want_to_join(self, msg: WantToJoinMsg, websocket):
         pid = msg.player_id
@@ -267,15 +275,14 @@ class GameController(object):
 
     def disconnected(self, websocket):
         person = self._find_person_by_websocket(websocket)
-        self.people.remove(person)
-        # if person in self.room:
-        #  self.room.remove(person)
-        #  return self._broadcast_room_update()
+        person.websocket = None
 
-        # TODO: to nie jest najlepsze rozwiązanie, ale tymczasowo usuwamy
-        # grę jeśli ktokolwiek wychodzi
-        self.game = None
-        self.room = []
+    def clear_disconnected(self):
+        self.people = [person for person in self.people
+                       if person.is_connected()]
+        self.room = [person for person in self.room if person.is_connected()]
+        if not self.room:
+            self.game = None
 
     def _find_person_by_websocket(self, websocket):
         for person in self.people:

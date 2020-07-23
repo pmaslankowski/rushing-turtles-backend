@@ -8,6 +8,9 @@ class Person(object):
         self.name = name
         self.websocket = websocket
 
+    def is_connected(self):
+        return self.websocket is not None
+    
     def __eq__(self, other):
         return self.id == other.id
 
