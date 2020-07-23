@@ -49,13 +49,12 @@ def test_deserialize_should_deserialize_want_to_join_msg():
     deserializer = MessageDeserializer()
     msg_json = json.dumps({
       'message': 'want to join the game',
-      'status': 'create the game',
       'player_id': 0
     })
 
     actual = deserializer.deserialize(msg_json)
 
-    assert actual == WantToJoinMsg('create the game', 0)
+    assert actual == WantToJoinMsg(0)
 
 
 def test_deserialize_should_deserialize_start_game_msg():

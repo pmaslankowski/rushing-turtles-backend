@@ -3,7 +3,7 @@ from collections import namedtuple
 import json
 
 HelloServerMsg = namedtuple('HelloServerMsg', 'player_id, player_name')
-WantToJoinMsg = namedtuple('WantToJoinTheGame', 'status, player_id')
+WantToJoinMsg = namedtuple('WantToJoinTheGame', 'player_id')
 StartGameMsg = namedtuple('StartGame', 'player_id')
 ReadyToReceiveGameState = namedtuple('ReadyToReceiveGameState', 'player_id')
 PlayCardMsg = namedtuple('PlayCardMsg', 'player_id, card_id, picked_color')

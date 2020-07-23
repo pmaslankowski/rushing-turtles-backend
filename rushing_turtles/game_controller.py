@@ -89,26 +89,16 @@ class GameController(object):
         person = self._find_person(pid)
         self._ensure_that_player_not_poses_as_sb_else(person, websocket)
 
-        if msg.status == 'create the game':
-            if self.room:
-                raise ValueError('Room is already created')
-            self.room.append(person)
-            return self._broadcast_room_update() + \
-                self._broadcast_can_join_except_pid(pid)
+        if len(self.room) >= MAX_PLAYERS_IN_ROOM:
+            raise ValueError('Room is full')
+        if person in self.room:
+            raise ValueError(f'Person {person} is already in the room')
+        if self.game:
+            raise ValueError('Game has already started')
 
-        elif msg.status == 'join the game':
-            if not self.room:
-                raise ValueError('Room does not exist yet')
-            if len(self.room) >= MAX_PLAYERS_IN_ROOM:
-                raise ValueError('Room is full')
-            if person in self.room:
-                raise ValueError(f'Person {person} is already in the room')
-            if self.game:
-                raise ValueError('Game has already started')
-
-            self.room.append(person)
-
-            return self._broadcast_room_update()
+        self.room.append(person)
+        return self._broadcast_room_update() + \
+            self._broadcast_can_join_outside_room(pid)
 
     def _ensure_that_player_not_poses_as_sb_else(self, person, websocket):
         if person.websocket != websocket:
@@ -130,8 +120,8 @@ class GameController(object):
     def _get_names_of_players_in_room(self):
         return [person.name for person in self.room]
 
-    def _broadcast_can_join_except_pid(self, pid):
-        return self._broadcast_except(
+    def _broadcast_can_join_outside_room(self, pid):
+        return self._broadcast_outside_room(
             lambda ws: MsgToSend(
                 ws,
                 message='hello client',
@@ -141,9 +131,9 @@ class GameController(object):
             pid
         )
 
-    def _broadcast_except(self, producer, pid):
+    def _broadcast_outside_room(self, producer, pid):
         return [producer(person.websocket) for person in self.people
-                if person.id != pid]
+                if person not in self.room]
 
     def _find_person(self, id: int):
         for person in self.people:
