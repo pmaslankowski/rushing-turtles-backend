@@ -1,5 +1,6 @@
 import asyncio
 import websockets
+import sys
 import logging
 
 from rushing_turtles.game_controller import GameController
@@ -17,7 +18,7 @@ class GameServer(object):
         try:
             async for message in websocket:
                 try:
-                    print(f'Message received: {message}')
+                    logging.info(f'Message received: {message}')
 
                     deserialized_message = self.deserializer.deserialize(
                         message)
@@ -33,6 +34,8 @@ class GameServer(object):
                         offending_message=message
                     )
                     await error_msg.send()
+        except Exception as e:
+            logging.error(f'An exception occured: {e}')
         finally:
             messages_to_send = self.controller.disconnected(websocket)
             await self._send_messages(messages_to_send)
@@ -49,7 +52,12 @@ class GameServer(object):
 if __name__ == '__main__':
     addr = '0.0.0.0'
     port = 8000
-    print(f'Starting server... Address: {addr}, port: {port}')
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+    logging.info(f'Starting server... Address: {addr}, port: {port}')
 
     controller = GameController()
     deserializer = MessageDeserializer()
