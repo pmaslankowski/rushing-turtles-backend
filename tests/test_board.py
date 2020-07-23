@@ -84,21 +84,23 @@ def test_turtle_is_not_in_the_second_field_after_moving_through_the_second():
     assert board.further_fields[0] == []
 
 
-def test_move_raises_when_turtle_tries_to_go_out_of_the_board_from_start():
+def test_move_moves_to_the_last_field_when_goes_out_of_the_board_from_start():
     turtle = Turtle('RED')
     board = Board([turtle])
 
-    with pytest.raises(ValueError):
-        board.move(turtle, 10)
+    board.move(turtle, 10)
+
+    assert board.further_fields[-1] == [turtle]
 
 
-def test_move_raises_when_turtle_tries_to_go_out_of_the_board_from_second():
+def test_move_to_the_last_field_when_goes_out_of_the_board_from_further():
     turtle = Turtle('RED')
     board = Board([turtle])
-
     board.move(turtle, 1)
-    with pytest.raises(ValueError):
-        board.move(turtle, 9)
+
+    board.move(turtle, 9)
+
+    assert board.further_fields[-1] == [turtle]
 
 
 def test_move_should_move_turtle_to_finish_from_start():

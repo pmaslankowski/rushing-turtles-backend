@@ -53,13 +53,18 @@ class Board(object):
 
     def move(self, turtle: Turtle, offset: int) -> None:
         pos = self._find_pos(turtle)
-        if pos + offset >= NUMBER_OF_FIELDS:
-            raise ValueError(f"Turtle {turtle} tries to go out of the board")
+        cliped_offset = self._clip(pos, offset)
 
         if pos == 0:
-            self._move_from_start(turtle, offset)
+            self._move_from_start(turtle, cliped_offset)
         else:
-            self._move_from_further_fields(turtle, pos, offset)
+            self._move_from_further_fields(turtle, pos, cliped_offset)
+
+    def _clip(self, pos, offset):
+        if pos + offset >= NUMBER_OF_FIELDS:
+            return NUMBER_OF_FIELDS - 1 - pos
+        else:
+            return offset
 
     def _find_pos(self, turtle: Turtle) -> int:
         if self._is_in_start_field(turtle):
