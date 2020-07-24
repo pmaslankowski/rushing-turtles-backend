@@ -284,7 +284,7 @@ class GameController(object):
 
         self.people = [person for person in self.people
                        if person.is_connected()]
-        self.room = [person for person in self.room if person.is_connected()] 
+        self.room = [person for person in self.room if person.is_connected()]
         if not self.room:
             self.game = None
 
