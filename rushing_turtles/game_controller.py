@@ -229,15 +229,7 @@ class GameController(object):
         winner_ranking = self.game.play(person, action)
         new_cards = self.game.get_persons_cards(person)
 
-        game_state_updated_msgs = self._broadcast(lambda ws: MsgToSend(
-            ws,
-            message='game state updated',
-            board=self._board_to_dict(self.game.board),
-            active_player_idx=self.game._find_player_idx(
-                self.game.active_player),
-            recently_played_card=self._card_to_dict(
-                self.game.stacks.get_recent())
-        ))
+        game_state_updated_msgs = self._broadcast_game_state_updated_msg()
 
         player_cards_updated_msg = [MsgToSend(
             websocket,
@@ -259,20 +251,48 @@ class GameController(object):
                     for person in winner_ranking
                 ]
             ))
+            self.room = []
+            self.game = None
 
         return game_state_updated_msgs + player_cards_updated_msg + \
             game_won_msgs
 
+    def _broadcast_game_state_updated_msg(self):
+        return self._broadcast(lambda ws: MsgToSend(
+            ws,
+            message='game state updated',
+            board=self._board_to_dict(self.game.board),
+            active_player_idx=self.game._find_player_idx(
+                self.game.active_player),
+            recently_played_card=self._card_to_dict(
+                self.game.stacks.get_recent())
+        ))
+
     def disconnected(self, websocket):
         person = self._find_person_by_websocket(websocket)
-        person.websocket = None
+        if self.game:
+            person.websocket = None
+        else:
+            self.people.remove(person)
+            self.room.remove(person)
 
     def clear_disconnected(self):
+        if self.game:
+            for person in self.room:
+                if not person.is_connected():
+                    self.game.remove_player(person)
+
         self.people = [person for person in self.people
                        if person.is_connected()]
-        self.room = [person for person in self.room if person.is_connected()]
+        self.room = [person for person in self.room if person.is_connected()] 
         if not self.room:
             self.game = None
+
+        if self.game:
+            return self._broadcast_game_state_updated_msg()
+
+        # TODO: obsłużyć informowanie użytkowników o rozłączeniu innych
+        # graczy i start gry od nowa
 
     def _find_person_by_websocket(self, websocket):
         for person in self.people:

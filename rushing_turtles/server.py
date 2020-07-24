@@ -53,7 +53,7 @@ class GameServer(object):
         while True:
             await asyncio.sleep(CLEAR_DISCONNECTED_PERIOD)
             logging.info('Clearing disconnected players')
-            self.controller.clear_disconnected()
+            await self._send_messages(self.controller.clear_disconnected())
 
 
 if __name__ == '__main__':

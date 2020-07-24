@@ -220,10 +220,32 @@ def test_should_raise_when_player_tries_to_pose_as_somebody_else_on_join():
         controller.handle(WantToJoinMsg(1), 0)
 
 
-def test_should_emit_can_resume_when_player_disconnects_and_reconnects():
+def test_should_emit_can_create_when_player_reconnects_before_game_started():
     controller = GameController()
+
     controller.handle(HelloServerMsg(0, 'Piotr'), 0)
     controller.handle(WantToJoinMsg(0), 0)
+
+    controller.disconnected(0)
+
+    actual = controller.handle(HelloServerMsg(1, 'Piotr'), 1)
+
+    assert actual == MsgToSend(
+        1,
+        message='hello client',
+        status='can create',
+        list_of_players_in_room=[]
+    )
+
+
+def test_should_emit_can_resume_when_player_reconnects_during_the_game():
+    controller = GameController()
+
+    controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+    controller.handle(WantToJoinMsg(0), 0)
+    controller.handle(HelloServerMsg(1, 'Marta'), 1)
+    controller.handle(WantToJoinMsg(1), 1)
+    controller.handle(StartGameMsg(0), 0)
 
     controller.disconnected(0)
 
@@ -233,7 +255,7 @@ def test_should_emit_can_resume_when_player_disconnects_and_reconnects():
         1,
         message='hello client',
         status='can resume',
-        list_of_players_in_room=['Piotr']
+        list_of_players_in_room=['Piotr', 'Marta']
     )
 
 
@@ -531,6 +553,30 @@ def test_should_broadcast_game_won_when_someone_wins():
 
     for expected_msg in expected_msgs:
         assert expected_msg in actual
+
+
+def test_should_emit_room_updated_when_player_plays_again_after_won():
+    controller = GameController()
+
+    controller.handle(HelloServerMsg(0, 'Piotr'), 0)
+    controller.handle(HelloServerMsg(1, 'Marta'), 1)
+    controller.handle(WantToJoinMsg(0), 0)
+    controller.handle(WantToJoinMsg(1), 1)
+    controller.handle(StartGameMsg(0), 0)
+
+    controller.game.board.move(Turtle('YELLOW'), 8)
+
+    controller.handle(PlayCardMsg(0, 28, None), 0)
+
+    actual = controller.handle(WantToJoinMsg(0), 0)
+
+    expected = MsgToSend(
+        0,
+        message='room update',
+        list_of_players_in_room=['Piotr']
+    )
+
+    assert expected in actual
 
 
 def test_clear_disconnected_should_remove_players_from_room():

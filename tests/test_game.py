@@ -333,6 +333,17 @@ def test_get_persons_cards_should_return_cards(game):
     assert cards == game.players[0].cards
 
 
+def test_it_should_be_third_player_turn_after_removing_second_player(cards):
+    turtles = [Turtle('GREEN'), Turtle('RED'), Turtle('BLUE')]
+    people = (Person(0, 'Piotr'), Person(1, 'Marta'), Person(2, 'Other'))
+    game = Game(people, turtles, cards)
+
+    game.play(people[0], Action(Card(0, 'RED', 'PLUS')))
+    game.remove_player(people[1])
+
+    assert game.active_player.person == people[2]
+
+
 def test_create_game_should_create_game(people):
     game = create_game(people)
 

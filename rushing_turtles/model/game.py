@@ -141,6 +141,13 @@ class Game(object):
         player = self._find_player(person)
         return player.cards
 
+    # TODO: co, jeśli zostanie tylko jeden gracz?
+    def remove_player(self, person: Person):
+        player = self._find_player(person)
+        if self.active_player == player:
+            self._change_active_player()
+        self.players.remove(player)
+
 
 def create_game(people: List[Person]):
     turtles = [Turtle('RED'), Turtle('GREEN'), Turtle('BLUE'),
